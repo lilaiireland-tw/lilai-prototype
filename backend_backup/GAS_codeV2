@@ -1,0 +1,189 @@
+// ══════════════════════════════════════════════
+// 1. 基本設定與機密資訊 
+// ══════════════════════════════════════════════
+const ADMIN_EMAIL = 'lilaiireland@gmail.com'; // 你的接收信箱
+
+const blockerMeta = {
+  budget:     { label:'Budget 預算焦慮',     cls:'bp-budget' },
+  comparison: { label:'Comparison 選擇困難', cls:'bp-comparison' },
+  direction:  { label:'Direction 方向模糊',  cls:'bp-direction' },
+  trust:      { label:'Trust 信任不足',      cls:'bp-trust' },
+  reality:    { label:'Reality 現實落差',    cls:'bp-reality' },
+};
+
+const resultCopy = {
+  budget:     { 
+    title:'你卡在「預算焦慮」', 
+    body:'你有出國的想法，但「不確定錢夠不夠」讓你一直停在起點。這個卡關通常不只是數字問題，有時候是需要先說服家人，有時候是不確定投資值不值得。', 
+    badge:'⚡ 建議搭配顧問諮詢', 
+    ai:'費用區間試算、每月生活開銷參考、語校學費比較，顧問諮詢前可以先幫你整理好這些數字。', 
+    both:'你自己每月可動用的預算是多少？把這個數字帶去諮詢，才能做有意義的試算。', 
+    human:'「我的預算夠嗎？值得去嗎？」這個問題背後通常有個人財務細節和家人因素，需要和真人深聊才能給出實際建議。' 
+  },
+  comparison: { 
+    title:'你卡在「選擇懸置期」', 
+    body:'你已經有出國的想法，但選項太多、不知道怎麼比較，讓你一直停在「還在想」的狀態。資訊越查越多，反而越難決定。', 
+    badge:'⚡ 建議預約顧問諮詢', 
+    ai:'語校費用比較、都柏林 vs 科克差異、各方案說明，顧問諮詢前可以先整理一份結構化的比較給你。', 
+    both:'你的選校條件是什麼？學費上限多少？比較之前先確認這些，才不會選了一圈又回到原點。', 
+    human:'「哪間語校最適合我？」涉及個人條件適配，這個判斷需要顧問了解你的完整情況才能給出建議。' 
+  },
+  direction:  { 
+    title:'你卡在「動機不明確」', 
+    body:'你有去愛爾蘭的念頭，但說不清楚「為什麼要去」或「去了之後要做什麼」。這不是壞事，只是需要先想清楚，而不是先查語校。', 
+    badge:'⚡ 建議預約顧問諮詢', 
+    ai:'愛爾蘭打工遊學、語校、打工度假的基本說明，顧問諮詢前可以先整理各種選項給你了解。', 
+    both:'你最希望這趟旅程帶給你什麼？先想這個問題，諮詢時聊起來會更有方向。', 
+    human:'「我適合去嗎？」「去了值得嗎？」這類核心問題需要有人根據你的狀況給你真實回饋。' 
+  },
+  trust:      { 
+    title:'你卡在「不知道該信誰」', 
+    body:'你看了很多資訊，但不確定代辦說的是不是客觀的、網路上的分享適不適合自己的狀況。資訊多不等於信心夠。', 
+    badge:'⚡ 建議預約顧問諮詢', 
+    ai:'費用組成說明、MEI 認證是什麼、顧問服務流程，這些顧問可以在諮詢前先整理給你了解。', 
+    both:'你對哪個部分最有疑慮？把具體的問題列出來，諮詢時可以直接問。', 
+    human:'信任是需要透過真人建立的。一次諮詢比看十篇文章更有效。' 
+  },
+  reality:    { 
+    title:'你卡在「現實落差不確定」', 
+    body:'你擔心英文程度不夠、不確定能不能找到工作、或對語校效果有疑慮。這類問題需要有人幫你設定合理期待。', 
+    badge:'⚡ 建議預約顧問諮詢', 
+    ai:'語校分班制度說明、一般英文進步曲線、常見工作類型和薪資範圍，顧問可以在諮詢前先整理參考資料給你。', 
+    both:'你現在的英文程度大概是？有沒有具體擔心的情境？帶著這些細節去諮詢。', 
+    human:'「以我的英文程度去愛爾蘭實際上會是什麼狀況？」這個問題需要有經驗的人給你真實的評估。' 
+  },
+};
+
+// ══════════════════════════════════════════════
+// 2. 接收請求的主要入口
+// ══════════════════════════════════════════════
+function doPost(e) {
+  try {
+    // 解析前端傳來的 JSON 資料
+    const data = JSON.parse(e.postData.contents);
+    
+    // 【第一道防線】後端資料驗證：防止機器人直接戳 API
+    if (!data.name || !data.email || !data.ans) {
+      return responseJSON({ error: "資料不完整，拒絕處理。" });
+    }
+    
+    // 簡單驗證 Email 格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      return responseJSON({ error: "Email 格式不正確。" });
+    }
+
+    // ══════════════════════════════════════════════
+    // 3. 商業邏輯：根據答案計算卡關點 (原前端邏輯移至此處)
+    // ══════════════════════════════════════════════
+    const ans = data.ans;
+    const list = [];
+    const q2 = Array.isArray(ans.q2) ? ans.q2 : [];
+
+    if (q2.some(a => a.includes('預算')))          list.push('budget');
+    if (q2.some(a => a.includes('學校太多')))       list.push('comparison');
+    if (q2.some(a => a.includes('適不適合')))       list.push('direction');
+    if (q2.some(a => a.includes('相信')))           list.push('trust');
+    if (q2.some(a => a.includes('英文')))           list.push('reality');
+    if (q2.some(a => a.includes('工作機會')))       list.push('reality');
+    if (q2.some(a => a.includes('家人')))           list.push('trust');
+    if (ans.q1.includes('比較語校'))                list.push('comparison');
+    if (ans.q1.includes('只是想出去'))              list.push('direction');
+    if (ans.q5.includes('反對'))                    list.push('trust');
+
+    // 去除重複，最多取前三個卡關點
+    const blockers = [...new Set(list)].slice(0, 3);
+    const primary = blockers[0] || 'comparison'; // 如果都沒中，預設給 comparison
+    const copy = resultCopy[primary];
+
+    // 準備回傳給前端的資料
+    const resultData = {
+      title: copy.title,
+      body: copy.body,
+      badge: copy.badge,
+      ai: copy.ai,
+      both: copy.both,
+      human: copy.human,
+      pills: (blockers.length ? blockers : ['comparison']).map(b => blockerMeta[b])
+    };
+
+    // ══════════════════════════════════════════════
+    // 4. 發送 Email 通知
+    // ══════════════════════════════════════════════
+    // 4-1. 寄給顧問 (Admin) 的詳細名單
+    const adminEmailHtml = `
+      <h2 style="color: #0A6E6E;">📋 新的決策卡關診斷名單</h2>
+      <p><strong>姓名：</strong> ${data.name}</p>
+      <p><strong>Email：</strong> ${data.email}</p>
+      <p><strong>IG：</strong> ${data.ig || '未填寫'}</p>
+      <p><strong>Line ID：</strong> ${data.line || '未填寫'}</p>
+      <p><strong>偏好聯繫方式：</strong> ${data.contact || '未選擇'}</p>
+      <hr>
+      <h3 style="color: #0A6E6E;">💡 診斷結果</h3>
+      <p><strong>主要卡關：</strong> ${copy.title}</p>
+      <p><strong>所有觸發標籤：</strong> ${blockers.join(', ')}</p>
+      <hr>
+      <h3 style="color: #0A6E6E;">📝 填答明細</h3>
+      <p><strong>Q1 狀態：</strong> ${ans.q1}</p>
+      <p><strong>Q2 卡關：</strong> ${q2.join('、')}</p>
+      <p><strong>Q3 需要幫助：</strong> ${ans.q3}</p>
+      <p><strong>Q4 預計出發：</strong> ${ans.q4}</p>
+      <p><strong>Q5 溝通對象：</strong> ${ans.q5}</p>
+      <p><strong>想聊的問題：</strong> ${data.q || '未填寫'}</p>
+    `;
+
+    MailApp.sendEmail({
+      to: ADMIN_EMAIL,
+      subject: `[卡關診斷] 新名單 - ${data.name}`,
+      htmlBody: adminEmailHtml
+    });
+
+    // 4-2. (選用) 寄給使用者的診斷報告備份
+    const userEmailHtml = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <h2 style="color: #0A6E6E;">哈囉 ${data.name}，這是你的決策卡關診斷報告</h2>
+        <p>感謝你完成築夢愛爾的診斷測驗！以下是我們為你整理的分析：</p>
+        
+        <div style="background-color: #F0FAFA; padding: 20px; border-radius: 8px; border-left: 4px solid #0A6E6E; margin-bottom: 20px;">
+          <h3 style="margin-top: 0;">${copy.title}</h3>
+          <p>${copy.body}</p>
+        </div>
+
+        <p><strong>✅ 顧問可以幫你整理的：</strong><br>${copy.ai}</p>
+        <p><strong>⚠️ 你可以先想一想的：</strong><br>${copy.both}</p>
+        <p><strong>👤 適合在諮詢深聊的：</strong><br>${copy.human}</p>
+
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p>我們的顧問會在看過這份報告後，於 1–2 個工作天內透過你留下的聯絡方式聯繫你，安排後續的免費諮詢。</p>
+        <p>期待與你聊聊！<br>築夢愛爾國際留遊學顧問 團隊</p>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: data.email,
+      subject: `【築夢愛爾】${data.name} 的決策卡關診斷報告`,
+      htmlBody: userEmailHtml,
+      name: '築夢愛爾國際留遊學顧問'
+    });
+
+    // ══════════════════════════════════════════════
+    // 5. 將結果回傳給前端顯示
+    // ══════════════════════════════════════════════
+    return responseJSON(resultData);
+
+  } catch (error) {
+    // 捕捉錯誤，回傳給前端 (建議上線後可以把 error.toString() 拿掉，不要把後端錯誤細節暴露給前端)
+    return responseJSON({ error: "伺服器處理發生錯誤，請稍後再試。" });
+  }
+}
+
+// 為了處理 CORS 預檢請求 (OPTIONS)，在使用 text/plain 時通常不需要，但以防萬一加上
+function doOptions(e) {
+  return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+}
+
+// 輔助函式：標準化回傳 JSON 格式
+function responseJSON(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
