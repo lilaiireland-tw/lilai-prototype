@@ -1,103 +1,162 @@
 // ══════════════════════════════════════════════
-// 1. 基本設定與機密資訊 
+// 築夢愛爾國際留遊學顧問
+// Decision Confidence System — Apps Script 最終版 (前後端分離)
+// 修改 SHEET_ID 後即可部署使用
 // ══════════════════════════════════════════════
-const ADMIN_EMAIL = 'lilaiireland@gmail.com'; // 你的接收信箱
 
+const SHEET_ID = '14p61WbwZanJFSNjoYqSg-RyEwrb-D5KJcQTVjfg_vHY';    // ← 換成你的 Google Sheets ID
+const NOTIFY_EMAIL = 'lilaiireland@gmail.com';
+const COMPANY_NAME = '築夢愛爾國際留遊學顧問';
+const IG_HANDLE = '@lilaiireland';
+
+// ── 診斷邏輯與文案 (隱藏在後端) ──
 const blockerMeta = {
-  budget:     { label:'Budget 預算焦慮',     cls:'bp-budget' },
-  comparison: { label:'Comparison 選擇困難', cls:'bp-comparison' },
-  direction:  { label:'Direction 方向模糊',  cls:'bp-direction' },
-  trust:      { label:'Trust 信任不足',      cls:'bp-trust' },
-  reality:    { label:'Reality 現實落差',    cls:'bp-reality' },
+  budget: { label: 'Budget 預算焦慮', cls: 'bp-budget' },
+  comparison: { label: 'Comparison 選擇困難', cls: 'bp-comparison' },
+  direction: { label: 'Direction 方向模糊', cls: 'bp-direction' },
+  trust: { label: 'Trust 信任不足', cls: 'bp-trust' },
+  reality: { label: 'Reality 現實落差', cls: 'bp-reality' },
 };
 
 const resultCopy = {
-  budget:     { 
-    title:'你卡在「預算焦慮」', 
-    body:'你有出國的想法，但「不確定錢夠不夠」讓你一直停在起點。這個卡關通常不只是數字問題，有時候是需要先說服家人，有時候是不確定投資值不值得。', 
-    badge:'⚡ 建議搭配顧問諮詢', 
-    ai:'費用區間試算、每月生活開銷參考、語校學費比較，顧問諮詢前可以先幫你整理好這些數字。', 
-    both:'你自己每月可動用的預算是多少？把這個數字帶去諮詢，才能做有意義的試算。', 
-    human:'「我的預算夠嗎？值得去嗎？」這個問題背後通常有個人財務細節和家人因素，需要和真人深聊才能給出實際建議。' 
+  budget: {
+    title: '你卡在「預算焦慮」',
+    body: '你有出國的想法，但「不確定錢夠不夠」讓你一直停在起點。這個卡關通常不只是數字問題，有時候是需要先說服家人，有時候是不確定投資值不值得。',
+    badge: '⚡ 建議搭配顧問諮詢',
+    ai: '費用區間試算、每月生活開銷參考、語校學費比較，顧問諮詢前可以先幫你整理好這些數字。',
+    both: '你自己每月可動用的預算是多少？把這個數字帶去諮詢，才能做有意義的試算。',
+    human: '「我的預算夠嗎？值得去嗎？」這個問題背後通常有個人財務細節和家人因素，需要和真人深聊才能給出實際建議。'
   },
-  comparison: { 
-    title:'你卡在「選擇懸置期」', 
-    body:'你已經有出國的想法，但選項太多、不知道怎麼比較，讓你一直停在「還在想」的狀態。資訊越查越多，反而越難決定。', 
-    badge:'⚡ 建議預約顧問諮詢', 
-    ai:'語校費用比較、都柏林 vs 科克差異、各方案說明，顧問諮詢前可以先整理一份結構化的比較給你。', 
-    both:'你的選校條件是什麼？學費上限多少？比較之前先確認這些，才不會選了一圈又回到原點。', 
-    human:'「哪間語校最適合我？」涉及個人條件適配，這個判斷需要顧問了解你的完整情況才能給出建議。' 
+  comparison: {
+    title: '你卡在「選擇懸置期」',
+    body: '你已經有出國的想法，但選項太多、不知道怎麼比較，讓你一直停在「還在想」的狀態。資訊越查越多，反而越難決定。',
+    badge: '⚡ 建議預約顧問諮詢',
+    ai: '語校費用比較、都柏林 vs 科克差異、各方案說明，顧問諮詢前可以先整理一份結構化的比較給你。',
+    both: '你的選校條件是什麼？學費上限多少？比較之前先確認這些，才不會選了一圈又回到原點。',
+    human: '「哪間語校最適合我？」涉及個人條件適配，這個判斷需要顧問了解你的完整情況才能給出建議。'
   },
-  direction:  { 
-    title:'你卡在「動機不明確」', 
-    body:'你有去愛爾蘭的念頭，但說不清楚「為什麼要去」或「去了之後要做什麼」。這不是壞事，只是需要先想清楚，而不是先查語校。', 
-    badge:'⚡ 建議預約顧問諮詢', 
-    ai:'愛爾蘭打工遊學、語校、打工度假的基本說明，顧問諮詢前可以先整理各種選項給你了解。', 
-    both:'你最希望這趟旅程帶給你什麼？先想這個問題，諮詢時聊起來會更有方向。', 
-    human:'「我適合去嗎？」「去了值得嗎？」這類核心問題需要有人根據你的狀況給你真實回饋。' 
+  direction: {
+    title: '你卡在「動機不明確」',
+    body: '你有去愛爾蘭的念頭，但說不清楚「為什麼要去」或「去了之後要做什麼」。這不是壞事，只是需要先想清楚，而不是先查語校。',
+    badge: '⚡ 建議預約顧問諮詢',
+    ai: '愛爾蘭打工遊學、語校、打工度假的基本說明，顧問諮詢前可以先整理各種選項給你了解。',
+    both: '你最希望這趟旅程帶給你什麼？先想這個問題，諮詢時聊起來會更有方向。',
+    human: '「我適合去嗎？」「去了值得嗎？」這類核心問題需要有人根據你的狀況給你真實回饋。'
   },
-  trust:      { 
-    title:'你卡在「不知道該信誰」', 
-    body:'你看了很多資訊，但不確定代辦說的是不是客觀的、網路上的分享適不適合自己的狀況。資訊多不等於信心夠。', 
-    badge:'⚡ 建議預約顧問諮詢', 
-    ai:'費用組成說明、MEI 認證是什麼、顧問服務流程，這些顧問可以在諮詢前先整理給你了解。', 
-    both:'你對哪個部分最有疑慮？把具體的問題列出來，諮詢時可以直接問。', 
-    human:'信任是需要透過真人建立的。一次諮詢比看十篇文章更有效。' 
+  trust: {
+    title: '你卡在「不知道該信誰」',
+    body: '你看了很多資訊，但不確定代辦說的是不是客觀的、網路上的分享適不適合自己的狀況。資訊多不等於信心夠。',
+    badge: '⚡ 建議預約顧問諮詢',
+    ai: '費用組成說明、MEI 認證是什麼、顧問服務流程，這些顧問可以在諮詢前先整理給你了解。',
+    both: '你對哪個部分最有疑慮？把具體的問題列出來，諮詢時可以直接問。',
+    human: '信任是需要透過真人建立的。一次諮詢比看十篇文章更有效。'
   },
-  reality:    { 
-    title:'你卡在「現實落差不確定」', 
-    body:'你擔心英文程度不夠、不確定能不能找到工作、或對語校效果有疑慮。這類問題需要有人幫你設定合理期待。', 
-    badge:'⚡ 建議預約顧問諮詢', 
-    ai:'語校分班制度說明、一般英文進步曲線、常見工作類型和薪資範圍，顧問可以在諮詢前先整理參考資料給你。', 
-    both:'你現在的英文程度大概是？有沒有具體擔心的情境？帶著這些細節去諮詢。', 
-    human:'「以我的英文程度去愛爾蘭實際上會是什麼狀況？」這個問題需要有經驗的人給你真實的評估。' 
+  reality: {
+    title: '你卡在「現實落差不確定」',
+    body: '你擔心英文程度不夠、不確定能不能找到工作、或對語校效果有疑慮。這類問題需要有人幫你設定合理期待。',
+    badge: '⚡ 建議預約顧問諮詢',
+    ai: '語校分班制度說明、一般英文進步曲線、常見工作類型和薪資範圍，顧問可以在諮詢前先整理參考資料給你。',
+    both: '你現在的英文程度大概是？有沒有具體擔心的情境？帶著這些細節去諮詢。',
+    human: '「以我的英文程度去愛爾蘭實際上會是什麼狀況？」這個問題需要有經驗的人給你真實的評估。'
   },
 };
 
 // ══════════════════════════════════════════════
-// 2. 接收請求的主要入口
+// 主要進入點 (API 入口)
 // ══════════════════════════════════════════════
 function doPost(e) {
   try {
-    // 解析前端傳來的 JSON 資料
-    const data = JSON.parse(e.postData.contents);
-    
-    // 【第一道防線】後端資料驗證：防止機器人直接戳 API
-    if (!data.name || !data.email || !data.ans) {
-      return responseJSON({ error: "資料不完整，拒絕處理。" });
+    const rawData = JSON.parse(e.postData.contents);
+
+    // 1. 基本防呆驗證
+    if (!rawData.name || !rawData.email || !rawData.ans) {
+      return responseJSON({ error: "資料不完整，請重新確認。" });
     }
+    else if (rawData.honeypot) {
+      return responseJSON({ error: "拒絕存取" });
+    }
+    const userEmail = rawData.email.trim().toLowerCase();
+
+    // ── 🛡️ 宣告快取服務 (必須放在最前面) ──
+    const cache = CacheService.getScriptCache();
+
+    // ── 🛡️ 防禦一：檢查裝置是否在 300 秒冷卻期內 ──
+    const deviceId = rawData.deviceId;
+    if (!deviceId) {
+      return responseJSON({ error: "系統環境異常，請更換瀏覽器後再試。" }); 
+    }
+    const deviceCacheKey = 'cooldown_' + deviceId;
     
-    // 簡單驗證 Email 格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email)) {
-      return responseJSON({ error: "Email 格式不正確。" });
+    // 如果快取裡有這個裝置 ID，直接擋下
+    if (cache.get(deviceCacheKey)) {
+      return responseJSON({ error: "您的裝置請求過於頻繁，請等待 5 分鐘後再試！" });
     }
 
-    // ══════════════════════════════════════════════
-    // 3. 商業邏輯：根據答案計算卡關點 (原前端邏輯移至此處)
-    // ══════════════════════════════════════════════
-    const ans = data.ans;
-    const list = [];
+    // ── 🛡️ 防禦二：檢查此 Email 是否已經填寫過 ──
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    let sheet = ss.getSheetByName('Leads');
+
+    if (sheet) {
+      const emailFound = sheet.getRange("C:C").createTextFinder(userEmail).matchEntireCell(true).findNext();
+      if (emailFound) {
+        return responseJSON({ error: "這個 Email 已經做過診斷囉！請去信箱查看你的專屬報告。" });
+      }
+    }
+
+    // ── 🛡️ 通過所有防禦，將此裝置鎖定 300 秒 ──
+    cache.put(deviceCacheKey, 'locked', 300);
+
+    // 2. 商業邏輯：根據答案計算卡關點
+    const ans = rawData.ans;
     const q2 = Array.isArray(ans.q2) ? ans.q2 : [];
+    const list = [];
 
-    if (q2.some(a => a.includes('預算')))          list.push('budget');
-    if (q2.some(a => a.includes('學校太多')))       list.push('comparison');
-    if (q2.some(a => a.includes('適不適合')))       list.push('direction');
-    if (q2.some(a => a.includes('相信')))           list.push('trust');
-    if (q2.some(a => a.includes('英文')))           list.push('reality');
-    if (q2.some(a => a.includes('工作機會')))       list.push('reality');
-    if (q2.some(a => a.includes('家人')))           list.push('trust');
-    if (ans.q1.includes('比較語校'))                list.push('comparison');
-    if (ans.q1.includes('只是想出去'))              list.push('direction');
-    if (ans.q5.includes('反對'))                    list.push('trust');
+    if (q2.some(a => a.includes('預算'))) list.push('budget');
+    if (q2.some(a => a.includes('學校太多'))) list.push('comparison');
+    if (q2.some(a => a.includes('適不適合'))) list.push('direction');
+    if (q2.some(a => a.includes('相信'))) list.push('trust');
+    if (q2.some(a => a.includes('英文'))) list.push('reality');
+    if (q2.some(a => a.includes('工作機會'))) list.push('reality');
+    if (q2.some(a => a.includes('家人'))) list.push('trust');
+    if (ans.q1.includes('比較語校')) list.push('comparison');
+    if (ans.q1.includes('只是想出去')) list.push('direction');
+    if (ans.q5.includes('反對')) list.push('trust');
 
-    // 去除重複，最多取前三個卡關點
+    // 取前三個獨特的 Blocker
     const blockers = [...new Set(list)].slice(0, 3);
-    const primary = blockers[0] || 'comparison'; // 如果都沒中，預設給 comparison
+    const primary = blockers[0] || 'comparison';
     const copy = resultCopy[primary];
 
-    // 準備回傳給前端的資料
-    const resultData = {
+    // 3. 準備統整後的資料，餵給儲存與信件函式
+    const processedData = {
+      name: rawData.name,
+      email: rawData.email,
+      ig: rawData.ig,
+      line: rawData.line,
+      contact: rawData.contact,
+      q: rawData.q,
+      q1: ans.q1,
+      q2: q2.join('、'),
+      q3: ans.q3,
+      q4: ans.q4,
+      q5: ans.q5,
+      // 將 blocker 轉為好看的中文標籤 (給 Sheet 跟 Email 用)
+      blockers: blockers.map(b => blockerMeta[b].label).join('、'),
+      primaryBlocker: primary, // 傳英文 key 給 getConsultantTips 用
+      blockerTitle: copy.title,
+      resultAI: copy.ai,
+      resultBoth: copy.both,
+      resultHuman: copy.human,
+      resultBody: copy.body
+    };
+
+    // 4. 執行動作：存 Google Sheets、寄信給學生、寄通知給顧問
+    saveToSheet(processedData);
+    sendStudentEmail(processedData);
+    sendNotifyEmail(processedData);
+
+    // 5. 準備回傳給前端顯示的 JSON
+    const returnData = {
       title: copy.title,
       body: copy.body,
       badge: copy.badge,
@@ -107,83 +166,295 @@ function doPost(e) {
       pills: (blockers.length ? blockers : ['comparison']).map(b => blockerMeta[b])
     };
 
-    // ══════════════════════════════════════════════
-    // 4. 發送 Email 通知
-    // ══════════════════════════════════════════════
-    // 4-1. 寄給顧問 (Admin) 的詳細名單
-    const adminEmailHtml = `
-      <h2 style="color: #0A6E6E;">📋 新的決策卡關診斷名單</h2>
-      <p><strong>姓名：</strong> ${data.name}</p>
-      <p><strong>Email：</strong> ${data.email}</p>
-      <p><strong>IG：</strong> ${data.ig || '未填寫'}</p>
-      <p><strong>Line ID：</strong> ${data.line || '未填寫'}</p>
-      <p><strong>偏好聯繫方式：</strong> ${data.contact || '未選擇'}</p>
-      <hr>
-      <h3 style="color: #0A6E6E;">💡 診斷結果</h3>
-      <p><strong>主要卡關：</strong> ${copy.title}</p>
-      <p><strong>所有觸發標籤：</strong> ${blockers.join(', ')}</p>
-      <hr>
-      <h3 style="color: #0A6E6E;">📝 填答明細</h3>
-      <p><strong>Q1 狀態：</strong> ${ans.q1}</p>
-      <p><strong>Q2 卡關：</strong> ${q2.join('、')}</p>
-      <p><strong>Q3 需要幫助：</strong> ${ans.q3}</p>
-      <p><strong>Q4 預計出發：</strong> ${ans.q4}</p>
-      <p><strong>Q5 溝通對象：</strong> ${ans.q5}</p>
-      <p><strong>想聊的問題：</strong> ${data.q || '未填寫'}</p>
-    `;
+    return responseJSON(returnData);
 
-    MailApp.sendEmail({
-      to: ADMIN_EMAIL,
-      subject: `[卡關診斷] 新名單 - ${data.name}`,
-      htmlBody: adminEmailHtml
-    });
-
-    // 4-2. (選用) 寄給使用者的診斷報告備份
-    const userEmailHtml = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-        <h2 style="color: #0A6E6E;">哈囉 ${data.name}，這是你的決策卡關診斷報告</h2>
-        <p>感謝你完成築夢愛爾的診斷測驗！以下是我們為你整理的分析：</p>
-        
-        <div style="background-color: #F0FAFA; padding: 20px; border-radius: 8px; border-left: 4px solid #0A6E6E; margin-bottom: 20px;">
-          <h3 style="margin-top: 0;">${copy.title}</h3>
-          <p>${copy.body}</p>
-        </div>
-
-        <p><strong>✅ 顧問可以幫你整理的：</strong><br>${copy.ai}</p>
-        <p><strong>⚠️ 你可以先想一想的：</strong><br>${copy.both}</p>
-        <p><strong>👤 適合在諮詢深聊的：</strong><br>${copy.human}</p>
-
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        <p>我們的顧問會在看過這份報告後，於 1–2 個工作天內透過你留下的聯絡方式聯繫你，安排後續的免費諮詢。</p>
-        <p>期待與你聊聊！<br>築夢愛爾國際留遊學顧問 團隊</p>
-      </div>
-    `;
-
-    MailApp.sendEmail({
-      to: data.email,
-      subject: `【築夢愛爾】${data.name} 的決策卡關診斷報告`,
-      htmlBody: userEmailHtml,
-      name: '築夢愛爾國際留遊學顧問'
-    });
-
-    // ══════════════════════════════════════════════
-    // 5. 將結果回傳給前端顯示
-    // ══════════════════════════════════════════════
-    return responseJSON(resultData);
-
-  } catch (error) {
-    // 捕捉錯誤，回傳給前端 (建議上線後可以把 error.toString() 拿掉，不要把後端錯誤細節暴露給前端)
-    return responseJSON({ error: "伺服器處理發生錯誤，請稍後再試。" });
+  } catch (err) {
+    return responseJSON({ error: err.toString() });
   }
 }
 
-// 為了處理 CORS 預檢請求 (OPTIONS)，在使用 text/plain 時通常不需要，但以防萬一加上
+// 供瀏覽器測試用，確保網址有通
+function doGet(e) {
+  return ContentService
+    .createTextOutput('Apps Script 前後端分離 API 運作正常 ✓')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+// 處理 CORS 預檢請求
 function doOptions(e) {
   return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
 }
 
-// 輔助函式：標準化回傳 JSON 格式
+// 回傳 JSON 的共用函式
 function responseJSON(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ══════════════════════════════════════════════
+// 以下為你的業務邏輯函式 
+// ══════════════════════════════════════════════
+
+// ── 寫入 Google Sheets ──
+function saveToSheet(data) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sheet = ss.getSheetByName('Leads');
+  if (!sheet) {
+    sheet = ss.insertSheet('Leads');
+    sheet.appendRow([
+      '填表時間', '姓名', 'Email', 'IG', 'Line', '偏好聯繫',
+      'Q1 目前狀態', 'Q2 卡關', 'Q3 希望獲得', 'Q4 出發時間', 'Q5 利害關係人',
+      '主要 Blocker', '所有 Blockers', '想聊的問題',
+      '診斷標題', '顧問可整理', '學生先想', '諮詢深聊'
+    ]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, 18).setFontWeight('bold');
+  }
+  sheet.appendRow([
+    new Date().toLocaleString('zh-TW'),
+    data.name || '', data.email || '', data.ig || '',
+    data.line || '', data.contact || '',
+    data.q1 || '', data.q2 || '', data.q3 || '',
+    data.q4 || '', data.q5 || '',
+    data.primaryBlocker || '', data.blockers || '', data.q || '',
+    data.blockerTitle || '', data.resultAI || '',
+    data.resultBoth || '', data.resultHuman || '',
+  ]);
+}
+
+// ── 顧問下一步建議（根據 Blocker 產生） ──
+function getConsultantTips(primaryBlocker, data) {
+  const family = data.q5 && (data.q5.includes('反對') || data.q5.includes('擔心'));
+  const urgent = data.q4 && data.q4.includes('3 個月內');
+
+  const tips = {
+    comparison: [
+      '先確認學生的選校條件：學費上限、城市偏好、班級人數、華人比例',
+      '諮詢前準備好 2–3 間符合條件的語校比較表',
+      '詢問她對哪個差異最在意，幫她縮小到最後 1–2 間',
+      '確認是否有預算壓力，避免推薦後才發現費用超出',
+    ],
+    budget: [
+      '先問清楚每月可動用的預算上限（不是「應該帶多少」，而是「能動用多少」）',
+      '確認台灣是否有固定支出（房租、貸款等），影響出發後的財務壓力',
+      '提供預算試算框架：語校費用 + 住宿 + 生活費的基本組合',
+      family ? '⚠️ 家人是財務把關者，可以準備費用透明說明供參考' : '確認家人對預算的態度',
+    ],
+    trust: [
+      '本次諮詢首要任務是建立信任，不是推薦學校',
+      '主動說明哩來的服務流程和費用組成，打消「被抽成」的疑慮',
+      '用真實學生案例建立信任，讓她看到具體的故事',
+      family ? '⚠️ 家人有疑慮，可提供費用透明說明給家人參考' : '了解學生對資訊來源的疑慮點',
+    ],
+    direction: [
+      '先問：「如果錢不是問題，你現在會怎麼決定？」釐清動機',
+      '不要直接推薦語校，先確認出國目的是什麼',
+      '幫她梳理幾個常見的出國動機讓她選，引導找到自己的理由',
+      '這次諮詢目標：讓她能說出「我想去，因為___」',
+    ],
+    reality: [
+      '說明語校分班制度，讓她知道初階程度是可以應付的',
+      '提供一般英文進步曲線參考，設定合理期待',
+      '分享類似程度的學生案例，幫她建立信心',
+      '釐清她對工作機會和薪資的具體期待，確認是否合理',
+    ],
+  };
+
+  const base = tips[primaryBlocker] || tips.comparison;
+  const result = [...base];
+  if (urgent && !result.some(t => t.includes('時程'))) {
+    result.push('⚡ 高緊迫性：預計 3 個月內出發，需在本次諮詢內協助做出具體決定');
+  }
+  if (family && !result.some(t => t.includes('家人'))) {
+    result.push('⚠️ 隱形利害關係人：學生提到家人因素，建議諮詢中主動詢問家人的具體疑慮');
+  }
+  return result;
+}
+
+// ── 寄診斷報告給學生 ──
+function sendStudentEmail(data) {
+  const name = data.name || '你';
+  const title = data.blockerTitle || '你的決策卡關診斷';
+  const body = data.resultBody || '';
+  const prep = data.resultAI || '';    // 顧問可整理
+  const think = data.resultBoth || ''; // 學生先想
+  const discuss = data.resultHuman || '';// 諮詢深聊
+  const blocker = data.blockers || '';
+  const subject = `[${COMPANY_NAME}] ${name}，你的決策卡關診斷報告出來了`;
+
+  const html = `<!DOCTYPE html><html lang="zh-TW">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F0FAFA;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+  <!-- Header -->
+  <tr><td style="background:#0A6E6E;border-radius:16px 16px 0 0;padding:28px 32px;">
+    <p style="color:rgba(255,255,255,.65);font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 6px;">決策卡關診斷報告</p>
+    <h1 style="color:#fff;font-size:22px;margin:0;font-weight:500;">${COMPANY_NAME}</h1>
+  </td></tr>
+
+  <!-- Body -->
+  <tr><td style="background:#fff;padding:32px;border-radius:0 0 16px 16px;">
+
+    <p style="font-size:15px;color:#1A1A2E;margin:0 0 8px;">嗨 ${name}，</p>
+    <p style="font-size:14px;color:#666;line-height:1.7;margin:0 0 28px;">謝謝你完成問卷。根據你的回答，我們幫你整理了一份決策卡關診斷報告，也幫你規劃了諮詢前可以做的準備。</p>
+
+    <!-- Blocker badge -->
+    <div style="background:#E0F4F4;border:1px solid #5BBCBC;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <p style="font-size:11px;color:#0A6E6E;text-transform:uppercase;letter-spacing:.08em;margin:0 0 6px;font-weight:600;">你的主要卡關類型</p>
+      <p style="font-size:16px;color:#0A6E6E;font-weight:600;margin:0;">${blocker}</p>
+    </div>
+
+    <!-- Diagnosis -->
+    <h2 style="font-size:20px;color:#0A6E6E;margin:0 0 10px;font-weight:500;">${title}</h2>
+    <p style="font-size:14px;color:#1A1A2E;line-height:1.75;margin:0 0 28px;">${body}</p>
+
+    <!-- 3 boxes -->
+    <div style="background:#D1FAE5;border:1px solid #A7F3D0;border-radius:10px;padding:16px 20px;margin-bottom:12px;">
+      <p style="font-size:13px;font-weight:600;color:#065F46;margin:0 0 6px;">✅ 顧問諮詢前會幫你整理好的部分</p>
+      <p style="font-size:13px;color:#065F46;line-height:1.65;margin:0;">${prep}</p>
+    </div>
+    <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:16px 20px;margin-bottom:12px;">
+      <p style="font-size:13px;font-weight:600;color:#78350F;margin:0 0 6px;">💭 你可以在諮詢前先想一想的部分</p>
+      <p style="font-size:13px;color:#78350F;line-height:1.65;margin:0;">${think}</p>
+    </div>
+    <div style="background:#FEE2E2;border:1px solid #FECACA;border-radius:10px;padding:16px 20px;margin-bottom:32px;">
+      <p style="font-size:13px;font-weight:600;color:#7F1D1D;margin:0 0 6px;">👤 諮詢時一起深聊的部分</p>
+      <p style="font-size:13px;color:#7F1D1D;line-height:1.65;margin:0;">${discuss}</p>
+    </div>
+
+    <!-- Next step -->
+    <div style="border-top:1px solid #E8E6E0;padding-top:24px;text-align:center;">
+      <p style="font-size:14px;color:#666;margin:0 0 6px;">顧問看過你的診斷報告後，</p>
+      <p style="font-size:14px;color:#1A1A2E;font-weight:500;margin:0 0 20px;">會在 <strong>1–2 個工作天內</strong>聯繫你安排免費諮詢時間。</p>
+      <a href="https://www.instagram.com/lilaiireland" style="display:inline-block;background:#0A6E6E;color:#fff;text-decoration:none;padding:12px 28px;border-radius:40px;font-size:14px;font-weight:500;">追蹤 ${IG_HANDLE} 看更多愛爾蘭資訊</a>
+    </div>
+
+    <p style="font-size:11px;color:#aaa;text-align:center;margin:24px 0 0;line-height:1.6;">
+      ${COMPANY_NAME}<br>
+      此為系統自動寄送，請勿直接回覆此信。如有疑問請透過 IG 私訊聯繫我們。
+    </p>
+
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
+
+  MailApp.sendEmail({ to: data.email, subject: subject, htmlBody: html });
+}
+
+// ── 寄新 Lead 通知給顧問 ──
+function sendNotifyEmail(data) {
+  const name = data.name || '（未填）';
+  const email = data.email || '（未填）';
+  const ig = data.ig || '—';
+  const line = data.line || '—';
+  const contact = data.contact || '—';
+  const blocker = data.blockers || '—';
+  const primary = data.primaryBlocker || 'comparison';
+  const q = data.q || '';
+  const q1 = data.q1 || '—', q2 = data.q2 || '—', q3 = data.q3 || '—';
+  const q4 = data.q4 || '—', q5 = data.q5 || '—';
+  const prep = data.resultAI || '';
+  const discuss = data.resultHuman || '';
+  const contactMap = { ig: 'IG 私訊', email: 'Email', line: 'Line' };
+
+  const tips = getConsultantTips(primary, data);
+  const tipsHtml = tips.map(t =>
+    `<tr><td style="padding:7px 0;border-bottom:1px dashed #E8E6E0;font-size:13px;color:#1A1A2E;vertical-align:top;">
+      <span style="color:#0A6E6E;font-weight:600;margin-right:8px;">→</span>${t}
+    </td></tr>`
+  ).join('');
+
+  const family = data.q5 && (data.q5.includes('反對') || data.q5.includes('擔心'));
+  const urgent = data.q4 && data.q4.includes('3 個月內');
+
+  const flagsHtml = [
+    family ? `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:12px 16px;margin-bottom:10px;font-size:13px;color:#78350F;">
+      <strong>⚠️ 隱形利害關係人：家人</strong><br>學生提到家人擔心或反對，諮詢時不要直接談費用，先了解家人的疑慮來源。</div>` : '',
+    urgent ? `<div style="background:#D1FAE5;border:1px solid #A7F3D0;border-radius:8px;padding:12px 16px;margin-bottom:10px;font-size:13px;color:#065F46;">
+      <strong>⚡ 高緊迫性：3 個月內出發</strong><br>需要在本次諮詢內協助做出具體決定，不要停留在資訊整理階段。</div>` : '',
+  ].filter(Boolean).join('');
+
+  const subject = `[哩來新 Lead] ${name} · ${blocker}`;
+
+  const html = `<!DOCTYPE html><html lang="zh-TW">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F0FAFA;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:24px 16px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;background:#fff;border-radius:14px;border:1px solid #E8E6E0;overflow:hidden;">
+
+  <!-- Header -->
+  <tr><td style="background:#0A6E6E;padding:20px 28px;">
+    <p style="color:rgba(255,255,255,.65);font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin:0 0 4px;">新 Lead 通知 · 顧問 Brief</p>
+    <h2 style="color:#fff;font-size:20px;margin:0;font-weight:500;">${name} 剛完成問卷</h2>
+  </td></tr>
+
+  <tr><td style="padding:28px;">
+
+    <!-- 聯絡資訊 -->
+    <p style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;font-weight:600;">聯絡資訊</p>
+    <table width="100%" cellpadding="5" cellspacing="0" style="font-size:13px;margin-bottom:20px;">
+      <tr><td style="color:#888;width:90px;">Email</td><td><a href="mailto:${email}" style="color:#0A6E6E;font-weight:500;">${email}</a></td></tr>
+      <tr><td style="color:#888;">IG</td><td style="color:#1A1A2E;">${ig}</td></tr>
+      <tr><td style="color:#888;">Line</td><td style="color:#1A1A2E;">${line}</td></tr>
+      <tr><td style="color:#888;">聯繫偏好</td><td style="color:#1A1A2E;">${contactMap[contact] || contact}</td></tr>
+    </table>
+
+    <!-- Blocker -->
+    <div style="background:#E0F4F4;border:1px solid #5BBCBC;border-radius:10px;padding:14px 18px;margin-bottom:20px;">
+      <p style="font-size:11px;color:#0A6E6E;text-transform:uppercase;letter-spacing:.08em;margin:0 0 4px;font-weight:600;">主要 Blocker</p>
+      <p style="font-size:16px;color:#0A6E6E;font-weight:600;margin:0;">${blocker}</p>
+    </div>
+
+    <!-- 警示旗標 -->
+    ${flagsHtml}
+
+    <!-- 問卷回答 -->
+    <p style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;font-weight:600;">問卷回答</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;border-top:1px solid #E8E6E0;margin-bottom:20px;">
+      <tr style="border-bottom:1px solid #E8E6E0;"><td style="color:#888;padding:8px 0;width:110px;vertical-align:top;">目前狀態</td><td style="color:#1A1A2E;padding:8px 0;">${q1}</td></tr>
+      <tr style="border-bottom:1px solid #E8E6E0;"><td style="color:#888;padding:8px 0;vertical-align:top;">卡關</td><td style="color:#1A1A2E;padding:8px 0;">${q2}</td></tr>
+      <tr style="border-bottom:1px solid #E8E6E0;"><td style="color:#888;padding:8px 0;vertical-align:top;">希望獲得</td><td style="color:#1A1A2E;padding:8px 0;">${q3}</td></tr>
+      <tr style="border-bottom:1px solid #E8E6E0;"><td style="color:#888;padding:8px 0;vertical-align:top;">出發時間</td><td style="color:#1A1A2E;padding:8px 0;">${q4}</td></tr>
+      <tr><td style="color:#888;padding:8px 0;vertical-align:top;">利害關係人</td><td style="color:#1A1A2E;padding:8px 0;">${q5}</td></tr>
+    </table>
+
+    ${q ? `<!-- 學生想聊的問題 -->
+    <div style="background:#F7F7F5;border-radius:8px;padding:14px 16px;margin-bottom:20px;">
+      <p style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin:0 0 6px;font-weight:600;">學生想聊的問題（原話）</p>
+      <p style="font-size:13px;color:#1A1A2E;line-height:1.7;margin:0;">${q}</p>
+    </div>` : ''}
+
+    <!-- 諮詢前顧問應準備 -->
+    <div style="background:#F0FAFA;border:1px solid #C8E8E8;border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+      <p style="font-size:11px;color:#0A6E6E;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;font-weight:600;">✅ 諮詢前請幫學生整理好</p>
+      <p style="font-size:13px;color:#1A1A2E;line-height:1.65;margin:0;">${prep}</p>
+    </div>
+
+    <!-- 諮詢中需深聊 -->
+    <div style="background:#FEF0F0;border:1px solid #FECACA;border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+      <p style="font-size:11px;color:#7F1D1D;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;font-weight:600;">👤 諮詢中需要深聊的部分</p>
+      <p style="font-size:13px;color:#1A1A2E;line-height:1.65;margin:0;">${discuss}</p>
+    </div>
+
+    <!-- 顧問建議切入點 -->
+    <p style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;font-weight:600;">🎯 建議諮詢切入點</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #E8E6E0;">
+      ${tipsHtml}
+    </table>
+
+    <p style="font-size:12px;color:#aaa;margin:20px 0 0;text-align:center;">這筆 Lead 已存入 Google Sheets · ${new Date().toLocaleString('zh-TW')}</p>
+
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
+
+  MailApp.sendEmail({ to: NOTIFY_EMAIL, subject: subject, htmlBody: html });
 }
